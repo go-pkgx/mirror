@@ -28,6 +28,8 @@ usage:
 flags:
   -d, --dest DIR     mirror root (default $PKGX_MIRROR or ./mirror)
       --from URL     upstream dist to mirror from (default https://dist.pkgx.dev)
+      --to REF       ALSO push each bottle to an OCI registry
+                     (e.g. oci://ghcr.io/go-pkgx/bottles); additive to --dest
       --os OS        restrict to an OS (repeatable; default: linux, darwin)
       --arch ARCH    restrict to an arch (repeatable; default: x86-64, aarch64)
       --all-versions mirror every version (default: the latest matching one)
@@ -37,11 +39,17 @@ flags:
   -v, --version      show version
 
 Serve <dest> statically and point tools at it:  PKGX_DIST=https://my.mirror pkgx …
+Or push to an OCI registry and pull from it:      mirror wget --to oci://ghcr.io/you/bottles
+                                                  PKGX_DIST=oci://ghcr.io/you/bottles pkgx wget
+
+OCI push credentials (optional; anonymous works for public pulls) come from the
+environment: OCI_TOKEN (a pre-issued bearer) or OCI_USERNAME / OCI_PASSWORD.
 `
 
 type opts struct {
 	dest        string
 	from        string
+	to          string
 	oses        []string
 	arches      []string
 	allVersions bool
@@ -114,6 +122,12 @@ func parseArgs(argv []string) (pos []string, o opts, help, showVer bool, err err
 			}
 		case strings.HasPrefix(a, "--from="):
 			o.from = strings.TrimPrefix(a, "--from=")
+		case a == "--to" || a == "--to-oci":
+			if v, ok := next(); ok {
+				o.to = v
+			}
+		case strings.HasPrefix(a, "--to="):
+			o.to = strings.TrimPrefix(a, "--to=")
 		case a == "--os":
 			if v, ok := next(); ok {
 				o.oses = append(o.oses, v)
@@ -154,7 +168,19 @@ func mirror(specs []string, o opts) error {
 		}
 		specs = expanded
 	}
-	var fetched, skipped int
+	// Optional OCI push target (additive to --dest).
+	var oci *bottle.OCIClient
+	if o.to != "" {
+		if !bottle.IsOCI(o.to) {
+			return fmt.Errorf("--to must be an oci:// ref, got %q", o.to)
+		}
+		c, err := bottle.NewOCIClient(o.to)
+		if err != nil {
+			return err
+		}
+		oci = c
+	}
+	var fetched, skipped, pushed int
 	for _, spec := range specs {
 		project, constraint := parseSpec(spec)
 		for _, osn := range o.oses {
@@ -166,12 +192,13 @@ func mirror(specs []string, o opts) error {
 					continue
 				}
 				for _, v := range selectVersions(vs, constraint, o.allVersions) {
-					n, s, err := mirrorOne(project, v.Raw, osn, arch, o)
+					n, s, p, err := mirrorOne(project, v.Raw, osn, arch, o, oci)
 					if err != nil {
 						return fmt.Errorf("%s v%s %s/%s: %w", project, v.Raw, osn, arch, err)
 					}
 					fetched += n
 					skipped += s
+					pushed += p
 				}
 				if !o.dryRun {
 					if err := writeVersions(o.dest, project, osn, arch, selectVersions(vs, constraint, o.allVersions)); err != nil {
@@ -181,36 +208,59 @@ func mirror(specs []string, o opts) error {
 			}
 		}
 	}
-	fmt.Printf("done: %d fetched, %d already present → %s\n", fetched, skipped, o.dest)
+	tail := ""
+	if oci != nil {
+		tail = fmt.Sprintf(", %d pushed → %s", pushed, o.to)
+	}
+	fmt.Printf("done: %d fetched, %d already present → %s%s\n", fetched, skipped, o.dest, tail)
 	return nil
 }
 
-// mirrorOne copies a single bottle if it is not already mirrored. It returns
-// (fetched, skipped) counts (each 0 or 1).
-func mirrorOne(project, ver, osn, arch string, o opts) (fetched, skipped int, err error) {
+// mirrorOne copies a single bottle into the static tree if it is not already
+// mirrored, and — when an OCI target is configured — also pushes it to the
+// registry. It returns (fetched, skipped, pushed) counts (each 0 or 1). When the
+// bottle is already present in the static tree it is read from disk so it can
+// still be pushed to OCI (the --to push is additive to --dest, not gated by it).
+func mirrorOne(project, ver, osn, arch string, o opts, oci *bottle.OCIClient) (fetched, skipped, pushed int, err error) {
 	dir := filepath.Join(o.dest, filepath.FromSlash(project), osn, arch)
-	// already mirrored (either compression) → skip.
-	for _, ext := range []string{".tar.gz", ".tar.xz"} {
-		if _, e := os.Stat(filepath.Join(dir, "v"+ver+ext)); e == nil {
-			return 0, 1, nil
+	var data []byte
+	var ext string
+	cached := false
+	for _, e := range []string{".tar.gz", ".tar.xz"} {
+		p := filepath.Join(dir, "v"+ver+e)
+		if b, rerr := os.ReadFile(p); rerr == nil {
+			data, ext, cached = b, e, true
+			break
 		}
 	}
 	if o.dryRun {
 		fmt.Printf("  fetch  %s v%s %s/%s (dry-run)\n", project, ver, osn, arch)
-		return 1, 0, nil
+		return 1, 0, 0, nil
 	}
-	data, ext, err := bottle.DownloadBottle(project, ver, osn, arch)
-	if err != nil {
-		return 0, 0, err
+	if cached {
+		skipped = 1
+	} else {
+		data, ext, err = bottle.DownloadBottle(project, ver, osn, arch)
+		if err != nil {
+			return 0, 0, 0, err
+		}
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return 0, 0, 0, err
+		}
+		if err := os.WriteFile(filepath.Join(dir, "v"+ver+ext), data, 0o644); err != nil {
+			return 0, 0, 0, err
+		}
+		fetched = 1
+		fmt.Printf("  fetch  %s v%s %s/%s (%d KiB)\n", project, ver, osn, arch, len(data)/1024)
 	}
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return 0, 0, err
+	if oci != nil {
+		if err := oci.Push(project, ver, osn, arch, data, ext); err != nil {
+			return fetched, skipped, 0, fmt.Errorf("oci push: %w", err)
+		}
+		pushed = 1
+		fmt.Printf("  push   %s v%s %s/%s → %s\n", project, ver, osn, arch, o.to)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "v"+ver+ext), data, 0o644); err != nil {
-		return 0, 0, err
-	}
-	fmt.Printf("  fetch  %s v%s %s/%s (%d KiB)\n", project, ver, osn, arch, len(data)/1024)
-	return 1, 0, nil
+	return fetched, skipped, pushed, nil
 }
 
 // writeVersions writes the mirror's versions.txt for a project/os/arch, listing

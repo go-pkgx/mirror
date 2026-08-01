@@ -40,6 +40,28 @@ func TestParseArgs(t *testing.T) {
 	}
 }
 
+func TestParseArgsTo(t *testing.T) {
+	_, o, _, _, err := parseArgs([]string{"--to", "oci://ghcr.io/go-pkgx/bottles", "wget"})
+	if err != nil || o.to != "oci://ghcr.io/go-pkgx/bottles" {
+		t.Fatalf("--to = %q err=%v", o.to, err)
+	}
+	_, o2, _, _, _ := parseArgs([]string{"--to=oci://reg/x", "wget"})
+	if o2.to != "oci://reg/x" {
+		t.Errorf("--to= form = %q", o2.to)
+	}
+	_, o3, _, _, _ := parseArgs([]string{"--to-oci", "oci://reg/y", "wget"})
+	if o3.to != "oci://reg/y" {
+		t.Errorf("--to-oci form = %q", o3.to)
+	}
+}
+
+func TestMirrorToRejectsNonOCI(t *testing.T) {
+	o := opts{dest: t.TempDir(), from: "https://x", to: "https://not-oci", oses: []string{"linux"}, arches: []string{"x86-64"}}
+	if err := mirror([]string{"acme.org/tool"}, o); err == nil {
+		t.Error("expected error for a non-oci:// --to")
+	}
+}
+
 func TestParseSpecAndSelect(t *testing.T) {
 	if p, c := parseSpec("gnu.org/wget"); p != "gnu.org/wget" || c != "*" {
 		t.Errorf("parseSpec bare = %q %q", p, c)
