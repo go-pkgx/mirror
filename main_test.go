@@ -195,3 +195,26 @@ func TestRunHelpVersion(t *testing.T) {
 		t.Errorf("no-args rc=%d", rc)
 	}
 }
+
+func TestEnsureMirrorVerifyDefault(t *testing.T) {
+	ol, os_ := lookupEnv, setenv
+	defer func() { lookupEnv, setenv = ol, os_ }()
+
+	// PKGX_VERIFY unset → mirror defaults it off.
+	var set string
+	setCalled := false
+	lookupEnv = func(string) (string, bool) { return "", false }
+	setenv = func(_, v string) error { setCalled = true; set = v; return nil }
+	ensureMirrorVerifyDefault()
+	if !setCalled || set != "0" {
+		t.Fatalf("unset PKGX_VERIFY → want set to 0, got set=%v value=%q", setCalled, set)
+	}
+
+	// PKGX_VERIFY set explicitly → mirror must NOT override it.
+	lookupEnv = func(string) (string, bool) { return "1", true }
+	setCalled = false
+	ensureMirrorVerifyDefault()
+	if setCalled {
+		t.Fatal("explicit PKGX_VERIFY must not be overridden")
+	}
+}

@@ -59,6 +59,24 @@ type opts struct {
 
 func main() { os.Exit(run(os.Args[1:])) }
 
+// Seams so the env default is unit-testable.
+var (
+	lookupEnv = os.LookupEnv
+	setenv    = os.Setenv
+)
+
+// ensureMirrorVerifyDefault turns install-time signature verification OFF for a
+// mirror run unless the operator set PKGX_VERIFY explicitly. Mirroring copies
+// upstream bytes as-is (it is not an install), and bottle now verifies by
+// default — so without this a default `mirror --from https://dist.pkgx.dev`
+// (unsigned upstream) would fail closed. An explicit PKGX_VERIFY=1 still wins
+// (e.g. to mirror only from a signed dist).
+func ensureMirrorVerifyDefault() {
+	if _, ok := lookupEnv("PKGX_VERIFY"); !ok {
+		_ = setenv("PKGX_VERIFY", "0")
+	}
+}
+
 func run(argv []string) int {
 	pos, o, help, showVer, err := parseArgs(argv)
 	if err != nil {
@@ -77,6 +95,7 @@ func run(argv []string) int {
 		fmt.Fprint(os.Stderr, usage)
 		return 2
 	}
+	ensureMirrorVerifyDefault()
 	// The upstream to pull from is explicit (NOT $PKGX_DIST, which is for
 	// consumers reading a mirror) — set it on the shared backend.
 	bottle.DistBase = strings.TrimRight(o.from, "/")
