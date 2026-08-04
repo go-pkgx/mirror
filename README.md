@@ -40,7 +40,9 @@ $ mirror --closure agwa.name/git-crypt --os linux --arch aarch64 --dest ./m
 
 # serve it and point tools at the mirror
 $ (cd ./m && python3 -m http.server 8080) &
-$ PKGX_DIST=http://localhost:8080 pkgm run agwa.name/git-crypt -- --version
+# a plain static (HTTP) mirror carries no signatures, so opt out of the
+# default-on signature check when consuming it (PKGX_VERIFY=0)
+$ PKGX_VERIFY=0 PKGX_DIST=http://localhost:8080 pkgm run agwa.name/git-crypt -- --version
 git-crypt 0.8.0
 ```
 

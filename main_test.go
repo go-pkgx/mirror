@@ -133,6 +133,10 @@ func TestExpandClosure(t *testing.T) {
 }
 
 func TestMirrorClosure(t *testing.T) {
+	// mirror deliberately pulls unsigned bottles from an HTTP upstream; this test
+	// exercises the transport, not verification policy, so opt out of the (now
+	// default-on) signature check against the in-memory fake.
+	t.Setenv("PKGX_VERIFY", "0")
 	_, cleanup := fakeDist(t)
 	defer cleanup()
 	dest := t.TempDir()
@@ -150,6 +154,10 @@ func TestMirrorClosure(t *testing.T) {
 }
 
 func TestMirrorEndToEnd(t *testing.T) {
+	// mirror deliberately pulls unsigned bottles from an HTTP upstream; this test
+	// exercises the transport, not verification policy, so opt out of the (now
+	// default-on) signature check against the in-memory fake.
+	t.Setenv("PKGX_VERIFY", "0")
 	_, cleanup := fakeDist(t)
 	defer cleanup()
 	dest := t.TempDir()
