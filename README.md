@@ -23,13 +23,18 @@ mirror <project>[@constraint] ...   mirror the given projects' bottles
 
   -d, --dest DIR     mirror root (default $PKGX_MIRROR or ./mirror)
       --from URL     upstream dist to mirror from (default https://dist.pkgx.dev)
+      --to REF       ALSO push each bottle to an OCI registry
+                     (e.g. oci://ghcr.io/you/bottles); additive to --dest
       --os OS        restrict to an OS (repeatable; default: linux, darwin)
       --arch ARCH    restrict to an arch (repeatable; default: x86-64, aarch64)
       --all-versions mirror every version (default: the latest matching one)
-      --closure      also mirror each project's full runtime closure + the
-                     implicit FROM-scratch system libs (glibc, libstdc++)
+      --closure      also mirror each project's full runtime dependency closure
   -n, --dry-run      report what would be fetched without downloading
 ```
+
+`--to` mirrors into an OCI registry alongside (or instead of) a `--dest` tree;
+anonymous push works for public pulls, or supply `OCI_TOKEN` /
+`OCI_USERNAME` + `OCI_PASSWORD`.
 
 ```console
 # mirror git-crypt and everything needed to run it, for linux/aarch64
