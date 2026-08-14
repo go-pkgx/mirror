@@ -2,7 +2,7 @@ module github.com/go-pkgx/mirror
 
 go 1.26.4
 
-require github.com/go-pkgx/bottle v0.5.3-0.20260814085237-24bd2b2e36e1
+require github.com/go-pkgx/bottle v0.5.3-0.20260814095316-6b622a0f452f
 
 // Local development: build against the in-tree bottle (adds the OCI transport).
 
