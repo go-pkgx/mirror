@@ -275,11 +275,32 @@ func mirrorOne(project, ver, osn, arch string, o opts, oci *bottle.OCIClient) (f
 		fmt.Printf("  fetch  %s v%s %s/%s (%d KiB)\n", project, ver, osn, arch, len(data)/1024)
 	}
 	if oci != nil {
-		if err := oci.Push(project, ver, osn, arch, data, ext); err != nil {
+		// Carry the bottle's attestations across when the SOURCE is a registry
+		// that has them. A copy without the SBOM, provenance and signature is a
+		// downgrade: verification is fail-closed by default, so a consumer of
+		// this mirror would either be refused or be told to turn verification
+		// off. (A static HTTP dist has no referrers to carry — attestations are
+		// an OCI notion — so that path pushes the bottle alone, as before.)
+		var refs []bottle.Referrer
+		var ann map[string]string
+		if src, err := bottle.NewOCIClient(bottle.DistBase); err == nil {
+			if r, a, err := src.FetchAttestations(project, ver, osn, arch); err == nil {
+				refs, ann = r, a
+			} else {
+				fmt.Printf("  note   %s v%s: no attestations carried (%v)\n", project, ver, err)
+			}
+		}
+		if _, err := oci.PushWithReferrersAnnotated(project, ver, osn, arch, data, ext, refs, ann); err != nil {
 			return fetched, skipped, 0, fmt.Errorf("oci push: %w", err)
 		}
 		pushed = 1
-		fmt.Printf("  push   %s v%s %s/%s → %s\n", project, ver, osn, arch, o.to)
+		signed := ""
+		for _, r := range refs {
+			if r.ArtifactType == bottle.ArtifactTypeSignature {
+				signed = " +signature"
+			}
+		}
+		fmt.Printf("  push   %s v%s %s/%s → %s (%d attestation(s)%s)\n", project, ver, osn, arch, o.to, len(refs), signed)
 	}
 	return fetched, skipped, pushed, nil
 }
