@@ -2,7 +2,7 @@ module github.com/go-pkgx/mirror
 
 go 1.26.4
 
-require github.com/go-pkgx/bottle v0.17.0
+require github.com/go-pkgx/bottle v0.18.0
 
 // Local development: build against the in-tree bottle (adds the OCI transport).
 
@@ -12,7 +12,7 @@ require (
 	github.com/apparentlymart/go-textseg/v17 v17.0.1 // indirect
 	github.com/go-attest/sign v0.1.0 // indirect
 	github.com/hashicorp/hcl/v2 v2.24.0 // indirect
-	github.com/klauspost/compress v1.19.2 // indirect
+	github.com/klauspost/compress v1.20.0 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
