@@ -16,6 +16,32 @@ pkgx bottle protocol with pkgm and pkgx through
 [`go-pkgx/bottle`](https://github.com/go-pkgx/bottle). `CGO_ENABLED=0`, one
 static binary.
 
+## Install
+
+**Linux / macOS** — one line, naming the release you want:
+
+```sh
+curl -fsSL https://go-pkgx.github.io/install.sh | sh -s -- mirror v0.1.2
+```
+
+**Windows** (PowerShell) — `irm | iex` passes no arguments, so the version goes
+in the environment:
+
+```powershell
+$env:PKGX_TOOL='mirror'; $env:MIRROR_VERSION='v0.1.2'; irm https://go-pkgx.github.io/install.ps1 | iex
+```
+
+The installer downloads the static binary for your os/arch from that
+[release](https://github.com/go-pkgx/mirror/releases), verifies it against the
+release `SHA256SUMS`, and drops `mirror` on your `PATH` (`$HOME/.local/bin`, or
+`%LOCALAPPDATA%\Programs\go-pkgx` on Windows; `MIRROR_INSTALL` overrides the
+directory on Unix). Or `go install github.com/go-pkgx/mirror@latest`.
+
+The version is named on purpose: this line copied today and the same line
+copied in six months install the same bytes, and a bad release does not reach
+everyone who happens to install that hour. To track releases instead, say so —
+`sh -s -- mirror latest`, or `MIRROR_VERSION=latest`.
+
 ## Usage
 
 ```
@@ -54,4 +80,24 @@ git-crypt 0.8.0
 It is incremental — bottles already present are skipped — and re-runnable to
 keep a mirror up to date. `--closure` pins each dependency to the version the
 resolver chose (so a package needing OpenSSL 1.1 gets `libssl.so.1.1`, not the
-latest 3.x). BSD-3-Clause.
+latest 3.x).
+
+## Where it is proven to work
+
+A mirror is most useful on the machine that has no internet and is not an
+x86 laptop, so CI builds nine targets — linux and darwin on amd64 and arm64,
+plus linux on riscv64, ppc64le, s390x and loong64 — and then **runs the suite**
+on five of them under `qemu-user`, with `-count=1` so a cached PASS from the
+host architecture cannot stand in for a run that never happened:
+
+```
+test (arm64, qemu)  test (riscv64, qemu)  test (ppc64le, qemu)
+test (s390x, qemu)  test (loong64, qemu)
+```
+
+Cross-compiling proves the code builds for an architecture and says nothing
+about whether it works there. s390x is in that list because it is big-endian
+and nothing else here is, and mirroring bottles means reading tar, xz and OCI
+manifests this code did not write.
+
+BSD-3-Clause.
