@@ -1,2 +1,4 @@
 /mirror
 *.out
+bsd.test
+bsd-tests.list
