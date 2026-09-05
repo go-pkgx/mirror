@@ -21,14 +21,14 @@ static binary.
 **Linux / macOS** — one line, naming the release you want:
 
 ```sh
-curl -fsSL https://go-pkgx.github.io/install.sh | sh -s -- mirror v0.1.3
+curl -fsSL https://go-pkgx.github.io/install.sh | sh -s -- mirror v0.1.4
 ```
 
 **Windows** (PowerShell) — `irm | iex` passes no arguments, so the version goes
 in the environment:
 
 ```powershell
-$env:PKGX_TOOL='mirror'; $env:MIRROR_VERSION='v0.1.3'; irm https://go-pkgx.github.io/install.ps1 | iex
+$env:PKGX_TOOL='mirror'; $env:MIRROR_VERSION='v0.1.4'; irm https://go-pkgx.github.io/install.ps1 | iex
 ```
 
 The installer downloads the static binary for your os/arch from that
