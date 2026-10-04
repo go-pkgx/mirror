@@ -1,7 +1,7 @@
 # mirror
 
 [![pkg.go.dev](https://img.shields.io/badge/pkg.go.dev-mirror-007d9c?logo=go&logoColor=white)](https://pkg.go.dev/github.com/go-pkgx/mirror)
-![Go](https://img.shields.io/badge/Go-1.26%2B-00ADD8?logo=go&logoColor=white)
+![Go](https://img.shields.io/badge/Go-1.27%2B-00ADD8?logo=go&logoColor=white)
 ![License](https://img.shields.io/badge/license-BSD--3--Clause-blue)
 
 Sync a **local mirror of pkgx bottles** from an upstream pkgx distribution. It
