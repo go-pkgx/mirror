@@ -16,7 +16,18 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
+      # ⛔ THE TAG MUST BE REACHABLE, and the default checkout is shallow:
+      # it fetches ONE commit of the ref it was given. `git checkout "$tag"`
+      # on the dispatch path then fails with
+      #
+      #     error: pathspec 'v0.3.10' did not match any file(s) known to git
+      #
+      # Measured 2026-10-09, immediately after adding that checkout — I took
+      # `git checkout "$tag"` from go-pkgx/bk and left behind the
+      # `fetch-depth: 0` it needs. Half of a pair.
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-go@v7
         with:
