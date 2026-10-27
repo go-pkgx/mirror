@@ -2,7 +2,7 @@ module github.com/go-pkgx/mirror
 
 go 1.27.2
 
-require github.com/go-pkgx/bottle v0.54.0
+require github.com/go-pkgx/bottle v0.59.0
 
 // Local development: build against the in-tree bottle (adds the OCI transport).
 
@@ -25,5 +25,5 @@ require (
 	golang.org/x/text v0.42.0 // indirect
 	golang.org/x/tools v0.49.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	oras.land/oras-go/v2 v2.6.4 // indirect
+	oras.land/oras-go/v2 v2.7.0 // indirect
 )
