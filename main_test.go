@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/go-pkgx/bottle"
+	"github.com/go-zpkg/bottle"
 )
 
 func TestParseArgs(t *testing.T) {
@@ -41,8 +41,8 @@ func TestParseArgs(t *testing.T) {
 }
 
 func TestParseArgsTo(t *testing.T) {
-	_, o, _, _, err := parseArgs([]string{"--to", "oci://ghcr.io/go-pkgx/bottles", "wget"})
-	if err != nil || o.to != "oci://ghcr.io/go-pkgx/bottles" {
+	_, o, _, _, err := parseArgs([]string{"--to", "oci://ghcr.io/go-zpkg/bottles", "wget"})
+	if err != nil || o.to != "oci://ghcr.io/go-zpkg/bottles" {
 		t.Fatalf("--to = %q err=%v", o.to, err)
 	}
 	_, o2, _, _, _ := parseArgs([]string{"--to=oci://reg/x", "wget"})
@@ -136,7 +136,7 @@ func TestMirrorClosure(t *testing.T) {
 	// mirror deliberately pulls unsigned bottles from an HTTP upstream; this test
 	// exercises the transport, not verification policy, so opt out of the (now
 	// default-on) signature check against the in-memory fake.
-	t.Setenv("PKGX_VERIFY", "0")
+	t.Setenv("ZPKG_VERIFY", "0")
 	_, cleanup := fakeDist(t)
 	defer cleanup()
 	dest := t.TempDir()
@@ -157,7 +157,7 @@ func TestMirrorEndToEnd(t *testing.T) {
 	// mirror deliberately pulls unsigned bottles from an HTTP upstream; this test
 	// exercises the transport, not verification policy, so opt out of the (now
 	// default-on) signature check against the in-memory fake.
-	t.Setenv("PKGX_VERIFY", "0")
+	t.Setenv("ZPKG_VERIFY", "0")
 	_, cleanup := fakeDist(t)
 	defer cleanup()
 	dest := t.TempDir()
@@ -200,21 +200,21 @@ func TestEnsureMirrorVerifyDefault(t *testing.T) {
 	ol, os_ := lookupEnv, setenv
 	defer func() { lookupEnv, setenv = ol, os_ }()
 
-	// PKGX_VERIFY unset → mirror defaults it off.
+	// ZPKG_VERIFY unset → mirror defaults it off.
 	var set string
 	setCalled := false
 	lookupEnv = func(string) (string, bool) { return "", false }
 	setenv = func(_, v string) error { setCalled = true; set = v; return nil }
 	ensureMirrorVerifyDefault()
 	if !setCalled || set != "0" {
-		t.Fatalf("unset PKGX_VERIFY → want set to 0, got set=%v value=%q", setCalled, set)
+		t.Fatalf("unset ZPKG_VERIFY → want set to 0, got set=%v value=%q", setCalled, set)
 	}
 
-	// PKGX_VERIFY set explicitly → mirror must NOT override it.
+	// ZPKG_VERIFY set explicitly → mirror must NOT override it.
 	lookupEnv = func(string) (string, bool) { return "1", true }
 	setCalled = false
 	ensureMirrorVerifyDefault()
 	if setCalled {
-		t.Fatal("explicit PKGX_VERIFY must not be overridden")
+		t.Fatal("explicit ZPKG_VERIFY must not be overridden")
 	}
 }

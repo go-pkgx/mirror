@@ -2,10 +2,10 @@
 // pkgx distribution (dist.pkgx.dev by default). It writes the same directory
 // layout the upstream serves — <dest>/<project>/<os>/<arch>/versions.txt and
 // v<ver>.tar.{gz,xz} — so the result can be served by any static file server
-// (nginx, S3, …) and used by pkgm/pkgx via `PKGX_DIST=<mirror-url>`.
+// (nginx, S3, …) and used by pkgm/pkgx via `ZPKG_DIST=<mirror-url>`.
 //
 // It shares the pkgx bottle protocol (URLs, version parsing, tarball fetch)
-// with pkgm and pkgx through the github.com/go-pkgx/bottle package, so there is
+// with pkgm and pkgx through the github.com/go-zpkg/bottle package, so there is
 // one source of truth. Pure Go, CGO_ENABLED=0.
 package main
 
@@ -15,7 +15,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/go-pkgx/bottle"
+	"github.com/go-zpkg/bottle"
 )
 
 // version is reported by `mirror --version`. It defaults to "dev" and is
@@ -28,10 +28,10 @@ usage:
   mirror <project>[@constraint] ...   mirror the given projects' bottles
 
 flags:
-  -d, --dest DIR     mirror root (default $PKGX_MIRROR or ./mirror)
+  -d, --dest DIR     mirror root (default $ZPKG_MIRROR or ./mirror)
       --from URL     upstream dist to mirror from (default https://dist.pkgx.dev)
       --to REF       ALSO push each bottle to an OCI registry
-                     (e.g. oci://ghcr.io/go-pkgx/bottles); additive to --dest
+                     (e.g. oci://ghcr.io/go-zpkg/bottles); additive to --dest
       --os OS        restrict to an OS (repeatable; default: linux, darwin)
       --arch ARCH    restrict to an arch (repeatable; default: x86-64, aarch64)
       --all-versions mirror every version (default: the latest matching one)
@@ -40,9 +40,9 @@ flags:
   -h, --help         show this help
   -v, --version      show version
 
-Serve <dest> statically and point tools at it:  PKGX_DIST=https://my.mirror pkgx …
+Serve <dest> statically and point tools at it:  ZPKG_DIST=https://my.mirror pkgx …
 Or push to an OCI registry and pull from it:      mirror wget --to oci://ghcr.io/you/bottles
-                                                  PKGX_DIST=oci://ghcr.io/you/bottles pkgx wget
+                                                  ZPKG_DIST=oci://ghcr.io/you/bottles pkgx wget
 
 OCI push credentials (optional; anonymous works for public pulls) come from the
 environment: OCI_TOKEN (a pre-issued bearer) or OCI_USERNAME / OCI_PASSWORD.
@@ -68,14 +68,14 @@ var (
 )
 
 // ensureMirrorVerifyDefault turns install-time signature verification OFF for a
-// mirror run unless the operator set PKGX_VERIFY explicitly. Mirroring copies
+// mirror run unless the operator set ZPKG_VERIFY explicitly. Mirroring copies
 // upstream bytes as-is (it is not an install), and bottle now verifies by
 // default — so without this a default `mirror --from https://dist.pkgx.dev`
-// (unsigned upstream) would fail closed. An explicit PKGX_VERIFY=1 still wins
+// (unsigned upstream) would fail closed. An explicit ZPKG_VERIFY=1 still wins
 // (e.g. to mirror only from a signed dist).
 func ensureMirrorVerifyDefault() {
-	if _, ok := lookupEnv("PKGX_VERIFY"); !ok {
-		_ = setenv("PKGX_VERIFY", "0")
+	if _, ok := lookupEnv("ZPKG_VERIFY"); !ok {
+		_ = setenv("ZPKG_VERIFY", "0")
 	}
 }
 
@@ -98,7 +98,7 @@ func run(argv []string) int {
 		return 2
 	}
 	ensureMirrorVerifyDefault()
-	// The upstream to pull from is explicit (NOT $PKGX_DIST, which is for
+	// The upstream to pull from is explicit (NOT $ZPKG_DIST, which is for
 	// consumers reading a mirror) — set it on the shared backend.
 	bottle.DistBase = strings.TrimRight(o.from, "/")
 	if err := mirror(pos, o); err != nil {
@@ -173,7 +173,7 @@ func parseArgs(argv []string) (pos []string, o opts, help, showVer bool, err err
 }
 
 func defaultDest() string {
-	if d := os.Getenv("PKGX_MIRROR"); d != "" {
+	if d := os.Getenv("ZPKG_MIRROR"); d != "" {
 		return d
 	}
 	return "mirror"

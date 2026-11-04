@@ -15,10 +15,10 @@ import (
 // Sigstore-signed statement that THIS workflow built THAT file from THAT
 // commit.
 //
-// Measured 2026-10-20 on go-pkgx/pkgx v0.23.1, with go-fleettools' relverify:
+// Measured 2026-10-20 on go-zpkg/pkgx v0.23.1, with go-fleettools' relverify:
 // twelve files, every checksum right, and every attestation lookup
-// `HTTP 404: Not Found`. The same was true of this repository, of go-pkgx/bk
-// and of go-pkgx/pkgm — releases that verify as far as a manifest can take
+// `HTTP 404: Not Found`. The same was true of this repository, of go-zpkg/bk
+// and of go-zpkg/pkgm — releases that verify as far as a manifest can take
 // them and no further, with nothing saying so, because a missing attestation
 // is an ABSENCE and a release page looks identical with and without one.
 //

@@ -1,6 +1,6 @@
 # mirror
 
-[![pkg.go.dev](https://img.shields.io/badge/pkg.go.dev-mirror-007d9c?logo=go&logoColor=white)](https://pkg.go.dev/github.com/go-pkgx/mirror)
+[![pkg.go.dev](https://img.shields.io/badge/pkg.go.dev-mirror-007d9c?logo=go&logoColor=white)](https://pkg.go.dev/github.com/go-zpkg/mirror)
 ![Go](https://img.shields.io/badge/Go-1.27%2B-00ADD8?logo=go&logoColor=white)
 ![License](https://img.shields.io/badge/license-BSD--3--Clause-blue)
 
@@ -8,12 +8,12 @@ Sync a **local mirror of pkgx bottles** from an upstream pkgx distribution. It
 writes the same directory layout the upstream serves —
 `<dest>/<project>/<os>/<arch>/versions.txt` and `v<ver>.tar.{gz,xz}` — so the
 result can be served by any static file server (nginx, S3, Caddy…) and used by
-[pkgm](https://github.com/go-pkgx/pkgm) / [pkgx](https://github.com/go-pkgx/pkgx)
-via `PKGX_DIST=<mirror-url>`.
+[pkgm](https://github.com/go-zpkg/zpkgm) / [pkgx](https://github.com/go-zpkg/zpkgx)
+via `ZPKG_DIST=<mirror-url>`.
 
-Part of the pure-Go [go-pkgx](https://github.com/go-pkgx) family; shares the
+Part of the pure-Go [go-zpkg](https://github.com/go-zpkg) family; shares the
 pkgx bottle protocol with pkgm and pkgx through
-[`go-pkgx/bottle`](https://github.com/go-pkgx/bottle). `CGO_ENABLED=0`, one
+[`go-zpkg/bottle`](https://github.com/go-zpkg/bottle). `CGO_ENABLED=0`, one
 static binary.
 
 ## Install
@@ -21,21 +21,21 @@ static binary.
 **Linux / macOS** — one line, naming the release you want:
 
 ```sh
-curl -fsSL https://go-pkgx.github.io/install.sh | sh -s -- mirror v0.1.4
+curl -fsSL https://go-zpkg.github.io/install.sh | sh -s -- mirror v0.1.4
 ```
 
 **Windows** (PowerShell) — `irm | iex` passes no arguments, so the version goes
 in the environment:
 
 ```powershell
-$env:PKGX_TOOL='mirror'; $env:MIRROR_VERSION='v0.1.4'; irm https://go-pkgx.github.io/install.ps1 | iex
+$env:ZPKG_TOOL='mirror'; $env:MIRROR_VERSION='v0.1.4'; irm https://go-zpkg.github.io/install.ps1 | iex
 ```
 
 The installer downloads the static binary for your os/arch from that
-[release](https://github.com/go-pkgx/mirror/releases), verifies it against the
+[release](https://github.com/go-zpkg/mirror/releases), verifies it against the
 release `SHA256SUMS`, and drops `mirror` on your `PATH` (`$HOME/.local/bin`, or
-`%LOCALAPPDATA%\Programs\go-pkgx` on Windows; `MIRROR_INSTALL` overrides the
-directory on Unix). Or `go install github.com/go-pkgx/mirror@latest`.
+`%LOCALAPPDATA%\Programs\go-zpkg` on Windows; `MIRROR_INSTALL` overrides the
+directory on Unix). Or `go install github.com/go-zpkg/mirror@latest`.
 
 ⛔ **`SHA256SUMS` is a checksum of itself.** It says the binaries match a
 manifest published beside them, and whoever replaced the binaries would
@@ -44,7 +44,7 @@ GitHub's **provenance attestation** — signed through Sigstore, saying that
 this repository's release workflow built that file from that commit:
 
 ```sh
-gh attestation verify -R go-pkgx/mirror mirror-linux-amd64
+gh attestation verify -R go-zpkg/mirror mirror-linux-amd64
 ```
 
 Every file of a release published after 2026-10-20 carries one; earlier ones
@@ -62,7 +62,7 @@ everyone who happens to install that hour. To track releases instead, say so —
 ```
 mirror <project>[@constraint] ...   mirror the given projects' bottles
 
-  -d, --dest DIR     mirror root (default $PKGX_MIRROR or ./mirror)
+  -d, --dest DIR     mirror root (default $ZPKG_MIRROR or ./mirror)
       --from URL     upstream dist to mirror from (default https://dist.pkgx.dev)
       --to REF       ALSO push each bottle to an OCI registry
                      (e.g. oci://ghcr.io/you/bottles); additive to --dest
@@ -87,8 +87,8 @@ $ mirror --closure agwa.name/git-crypt --os linux --arch aarch64 --dest ./m
 # serve it and point tools at the mirror
 $ (cd ./m && python3 -m http.server 8080) &
 # a plain static (HTTP) mirror carries no signatures, so opt out of the
-# default-on signature check when consuming it (PKGX_VERIFY=0)
-$ PKGX_VERIFY=0 PKGX_DIST=http://localhost:8080 pkgm run agwa.name/git-crypt -- --version
+# default-on signature check when consuming it (ZPKG_VERIFY=0)
+$ ZPKG_VERIFY=0 ZPKG_DIST=http://localhost:8080 pkgm run agwa.name/git-crypt -- --version
 git-crypt 0.8.0
 ```
 
